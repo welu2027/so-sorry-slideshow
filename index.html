@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>So Sorry Slides | "I'm So Sorry" Trend Maker</title>
+<meta name="description" content="Make the &quot;I'm so sorry&quot; trend with AI. Upload a real photo of you. AI gives you a glow-up, then every slide takes an edit back off until the real you shows up.">
+<meta property="og:title" content="So Sorry Slides | &quot;I'm So Sorry&quot; Trend Maker">
+<meta property="og:description" content="Upload a real photo. AI gives you a glow-up, then every slide takes it back. I'm SO sorry.">
+<meta name="theme-color" content="#0E1019">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one phone, one button. On wide screens the pitch sits left and the phone right; on phones it is one column, phone first. */
+:root{
+  --bg:#F1F2F6; --surface:#FFFFFF; --ink:#161A2B; --muted:#5B6074; --line:#D8DBE5;
+  --accent:#CF1A5E; --on-accent:#FFFFFF; --accent-soft:#FBE4ED; --good:#1C7C4D; --bad:#B42318;
+  --phone:#05060A; --phone-ui-fg:#FFFFFF; --phone-ui-bg:rgba(0,0,0,.5);
+  --cap-fill:#FFFFFF; --cap-stroke:#161A2B; --shadow:rgba(10,12,24,.28);
+  --f-display:"Bricolage Grotesque","Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0E1019; --surface:#171A26; --ink:#ECEEF6; --muted:#9CA2B8; --line:#2B2F42;
+    --accent:#FF4C93; --on-accent:#23040F; --accent-soft:#3A1527; --good:#5AD39A; --bad:#FF8A80;
+    --cap-fill:#FFFFFF; --cap-stroke:#000000; --shadow:rgba(0,0,0,.6); color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit}
+img{max-width:100%}
+[hidden]{display:none !important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{
+  max-width:1040px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:22px;justify-items:center;text-align:center;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:calc(env(safe-area-inset-top,0px) + 24px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px);
+}
+.top{display:flex;flex-direction:column;gap:10px;align-items:center;max-width:34rem}
+.cap-title{
+  margin:0;font-family:var(--f-display);font-weight:800;font-size:clamp(42px,9vw,80px);line-height:.95;letter-spacing:-.015em;text-wrap:balance;
+  color:var(--cap-fill);-webkit-text-stroke:.09em var(--cap-stroke);paint-order:stroke fill;
+}
+.lede{margin:0;font-size:17px;line-height:1.5;text-wrap:pretty}
+
+.phone{
+  position:relative;width:min(100%,360px,max(230px,calc((100vh - 300px) * 9 / 16)));aspect-ratio:9/16;
+  background:var(--phone);border-radius:28px;overflow:hidden;margin:7px 0;
+  box-shadow:0 0 0 7px var(--phone),0 26px 50px -22px var(--shadow);
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.phone.tappable{cursor:pointer}
+.phone > img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+.phone.slides > img{object-fit:cover}
+.chip{position:absolute;font-family:var(--f-mono);font-size:12px;line-height:1;color:var(--phone-ui-fg);background:var(--phone-ui-bg);padding:6px 9px;border-radius:999px;pointer-events:none}
+.count{top:12px;right:12px}
+.dots{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;gap:6px;pointer-events:none}
+.dots span{width:6px;height:6px;border-radius:50%;background:var(--phone-ui-fg);opacity:.38}
+.dots span.on{opacity:1}
+
+.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px;
+  background:radial-gradient(120% 70% at 15% 10%,rgba(255,76,147,.35),transparent 60%),radial-gradient(90% 60% at 90% 95%,rgba(242,193,90,.28),transparent 60%),var(--phone)}
+.ph-cap{font-family:var(--f-body);font-weight:800;font-size:26px;line-height:1.15;color:#FFFFFF;-webkit-text-stroke:5px #000000;paint-order:stroke fill;text-wrap:balance}
+.ph-sub{font-family:var(--f-mono);font-size:12px;color:var(--phone-ui-fg);opacity:.7}
+.scan{position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);background-size:260% 100%;animation:sweep 1.8s linear infinite}
+@keyframes sweep{from{background-position:130% 0}to{background-position:-130% 0}}
+.work-chip{left:50%;bottom:22px;transform:translateX(-50%);white-space:nowrap}
+
+.panel{width:min(100%,420px);display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:12px 20px;border-radius:12px;border:1px solid transparent;font-weight:700;font-size:16px;line-height:1.1;cursor:pointer;text-decoration:none}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--muted)}
+.btn.text{background:none;border:0;color:var(--muted);min-height:40px;text-decoration:underline;text-underline-offset:3px;font-weight:600}
+.btn:disabled{opacity:.55;cursor:default;filter:none}
+.file-btn{position:relative}
+.file-btn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.file-btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px}
+.row > .btn{flex:1}
+.transport{display:flex;align-items:center;justify-content:center;gap:12px}
+.iconbtn{width:48px;height:48px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}
+.transport .btn{min-width:110px;min-height:48px}
+.hint{margin:0;color:var(--muted);font-size:14px;line-height:1.5;text-wrap:pretty}
+.msg{margin:0;font-weight:600;text-wrap:pretty}
+.msg.bad{color:var(--bad)}
+
+.steps{list-style:none;margin:0;padding:6px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;text-align:left}
+.steps li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.steps li:first-child{border-top:0}
+.steps .ic{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center}
+.steps li.active .ic{border-color:var(--accent);border-right-color:transparent;animation:spin .8s linear infinite}
+.steps li.done .ic{border-color:var(--good);background:var(--good)}
+.steps li.done .ic::after{content:"";width:6px;height:10px;border:solid var(--surface);border-width:0 2px 2px 0;transform:translate(0,-1px) rotate(45deg)}
+.steps li.failed .ic{border-color:var(--bad)}
+.steps li.failed .ic::after{content:"";width:8px;height:2px;background:var(--bad)}
+.steps .st{margin-left:auto;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.steps li.active .lbl{font-weight:700}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.fine{margin:0;max-width:34rem;font-size:12.5px;line-height:1.5;color:var(--muted);text-wrap:pretty}
+
+.toast{position:fixed;z-index:40;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);max-width:min(92vw,460px);padding:11px 16px;border-radius:10px;background:var(--ink);color:var(--bg);font-weight:600;font-size:14px;line-height:1.4;opacity:0;transform:translate(-50%,16px);transition:opacity .2s,transform .2s;pointer-events:none;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (min-width:900px){
+  .app{grid-template-columns:minmax(0,1fr) 360px;grid-template-areas:"top phone" "panel phone" "fine phone";column-gap:64px;row-gap:24px;align-items:start;justify-items:start;text-align:left;padding-top:72px}
+  .top{grid-area:top;align-items:flex-start}
+  .phone{grid-area:phone;width:360px}
+  .panel{grid-area:panel}
+  .fine{grid-area:fine}
+}
+@media (prefers-reduced-motion: reduce){
+  .scan{animation:none;background:rgba(255,255,255,.08)}
+  .steps li.active .ic{animation:none;border-right-color:var(--accent)}
+  .toast{transition:none}
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <h1 class="cap-title">So Sorry Slides</h1>
+    <p class="lede"><strong>The &ldquo;I'm so sorry&rdquo; trend.</strong> Upload a real photo of you. AI gives you a glow-up, then every slide takes an edit back off until the real you shows up.</p>
+  </header>
+
+  <div class="phone" id="phone" tabindex="0" aria-label="Slideshow preview">
+    <img id="phoneImg" alt="" draggable="false" hidden>
+    <div class="placeholder" id="placeholder">
+      <div class="ph-cap">felt cute today</div>
+      <div class="ph-sub">your slides show up here</div>
+    </div>
+    <div class="scan" id="scan" hidden></div>
+    <span class="chip work-chip" id="workChip" hidden></span>
+    <span class="chip count" id="count" hidden></span>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+  </div>
+
+  <section class="panel" aria-live="polite">
+    <div id="s-idle">
+      <div class="panel">
+        <label class="btn primary file-btn"><input type="file" id="file" accept="image/*">Choose a photo</label>
+        <p class="hint">A clear photo of just you works best.</p>
+      </div>
+    </div>
+
+    <div id="s-auth" hidden>
+      <div class="panel">
+        <p class="msg">The AI runs on Puter, which is free. Sign in once and your glow-up starts.</p>
+        <button class="btn primary" id="signIn">Sign in to Puter and start</button>
+        <button class="btn text" id="authBack">Use a different photo</button>
+      </div>
+    </div>
+
+    <div id="s-work" hidden>
+      <div class="panel">
+        <ol class="steps" id="steps"></ol>
+        <p class="hint">Takes about half a minute. Keep this tab open.</p>
+      </div>
+    </div>
+
+    <div id="s-done" hidden>
+      <div class="panel">
+        <div class="transport">
+          <button class="iconbtn" id="prev" aria-label="Previous slide"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+          <button class="btn ghost" id="play">Pause</button>
+          <button class="iconbtn" id="next" aria-label="Next slide"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="saveSlides">Save slides</button>
+          <button class="btn ghost" id="saveVideo">Save video</button>
+        </div>
+        <a class="btn ghost" href="https://www.tiktok.com/music/original-sound-7694037025485310750" target="_blank" rel="noopener">Open the trend sound on TikTok</a>
+        <p class="hint">Post your saved slides as a TikTok photo slideshow and pick this sound, so your post shows up with the rest of the trend. The video has no sound and works for Reels and Stories.</p>
+        <div class="row">
+          <button class="btn text" id="redo">Redo the glow-up</button>
+          <label class="btn text file-btn"><input type="file" id="file2" accept="image/*">New photo</label>
+        </div>
+      </div>
+    </div>
+
+    <div id="s-error" hidden>
+      <div class="panel">
+        <p class="msg bad" id="errMsg"></p>
+        <button class="btn primary" id="retry">Try again</button>
+        <label class="btn ghost file-btn"><input type="file" id="file3" accept="image/*">Use a different photo</label>
+      </div>
+    </div>
+  </section>
+
+  <p class="fine">To make the glow-up, your photo is sent to Puter's free AI service, which uses Google's image model. Nothing gets posted anywhere unless you post it.</p>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://js.puter.com/v2/"></script>
+<script>
+(() => {
+  "use strict";
+  const OUT_W = 1080, OUT_H = 1920, KEEP_MAX = 1600, AI_MAX = 1024;
+  const MODELS = ["gemini-3.1-flash-image", "google/gemini-nano-banana-2.1", "gemini-2.5-flash-image"];
+  const KEEP = " Keep everything else exactly the same: the same person and identity, the same age, the same natural skin tone and ethnicity, the same body, the same pose and expression, the same clothes, the same background, and the same framing and camera angle. Photorealistic, like a real phone photo. No text, no borders, no watermark.";
+  const STEPS = [
+    { label: "Skin and lighting",
+      prompt: "Retouch this photo like a professional beauty edit: clear, smooth, glowing skin with no blemishes, redness or shine, and soft, bright, flattering lighting on the face.",
+      confess: ["and the skin was a filter\nI'm SO sorry", "the glow was fake too\nI'm SO sorry", "ok it was ALL edited\nI'm SO sorry"] },
+    { label: "Hair",
+      prompt: "Give the person in this photo noticeably better hair: fuller, glossier and perfectly styled in a way that suits them, keeping their natural hair color.",
+      confess: ["my hair doesn't look like that", "ok the hair was edited", "my hair has never looked like that"] },
+    { label: "Model mode",
+      prompt: "Make the person in this photo look like the most attractive version of themselves, like a model: a more defined jawline, more symmetrical features and brighter eyes. They must still be clearly recognizable as the same person.",
+      confess: ["ok that's not my jawline", "i don't look like a model irl", "the jawline was edited"] }
+  ];
+  const SETUP = ["felt cute today", "new pfp", "me after my glow up", "finally posting this"];
+
+  const $ = (s) => document.getElementById(s);
+  const el = {
+    phone: $("phone"), img: $("phoneImg"), placeholder: $("placeholder"), scan: $("scan"), workChip: $("workChip"),
+    count: $("count"), dots: $("dots"), steps: $("steps"), errMsg: $("errMsg"), toast: $("toast"),
+    play: $("play"), prev: $("prev"), next: $("next"), saveSlides: $("saveSlides"), saveVideo: $("saveVideo")
+  };
+  const panels = ["idle", "auth", "work", "done", "error"];
+  function show(name) { panels.forEach((p) => { $("s-" + p).hidden = p !== name; }); }
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  const coarse = window.matchMedia && matchMedia("(pointer: coarse)").matches;
+  function mk(w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; }
+  function fit(src, w, h, max) {
+    const s = Math.min(1, max / Math.max(w, h));
+    const c = mk(Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s)));
+    const x = c.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(src, 0, 0, c.width, c.height);
+    return c;
+  }
+  const b64 = (c) => c.toDataURL("image/jpeg", 0.9).split(",")[1];
+  const toBlob = (c, type = "image/jpeg", q = 0.92) => new Promise((r) => c.toBlob(r, type, q));
+
+  let toastTimer = null;
+  function toast(msg) {
+    el.toast.textContent = msg; el.toast.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.toast.classList.remove("show"), 3600);
+  }
+
+  const fontsGate = Promise.race([
+    document.fonts ? document.fonts.load('800 64px "Figtree"').catch(() => {}) : Promise.resolve(),
+    sleep(3000)
+  ]);
+
+  /* ---------- phone display ---------- */
+  function phoneShow(src, { scanning = false, chip = "" } = {}) {
+    el.placeholder.hidden = true;
+    el.img.hidden = false; el.img.src = src;
+    el.scan.hidden = !scanning;
+    el.workChip.hidden = !chip; el.workChip.textContent = chip;
+  }
+  function phoneReset() {
+    stopPlay(); slides = [];
+    el.phone.classList.remove("slides", "tappable");
+    el.img.hidden = true; el.img.removeAttribute("src");
+    el.placeholder.hidden = false; el.scan.hidden = true; el.workChip.hidden = true;
+    el.count.hidden = true; el.dots.innerHTML = "";
+  }
+
+  /* ---------- photo in ---------- */
+  let original = null, originalB64 = "";
+  // Try three ways to open the photo, because some browsers and embedded previews block one or two of them.
+  async function readPhoto(f) {
+    if (window.createImageBitmap) {
+      try { const bm = await createImageBitmap(f, { imageOrientation: "from-image" }); return { src: bm, w: bm.width, h: bm.height }; } catch {}
+      try { const bm = await createImageBitmap(f); return { src: bm, w: bm.width, h: bm.height }; } catch {}
+    }
+    try {
+      const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
+      const im = new Image(); im.src = dataUrl; await im.decode();
+      return { src: im, w: im.naturalWidth, h: im.naturalHeight };
+    } catch {}
+    try {
+      const url = URL.createObjectURL(f);
+      const im = new Image(); im.src = url; await im.decode();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return { src: im, w: im.naturalWidth, h: im.naturalHeight };
+    } catch {}
+    return null;
+  }
+  async function onFile(f) {
+    if (!f) return;
+    if (!(f.type || "").startsWith("image/") && !/\.(heic|heif|jpe?g|png|webp|avif)$/i.test(f.name || "")) {
+      toast("That file isn't a photo. Try a JPG, PNG or HEIC."); return;
+    }
+    const pic = await readPhoto(f);
+    if (!pic) { toast("This browser couldn't open that photo. Save it as a JPG and try again."); return; }
+    phoneReset();
+    original = fit(pic.src, pic.w, pic.h, KEEP_MAX);
+    if (pic.src.close) pic.src.close();
+    originalB64 = b64(fit(original, original.width, original.height, AI_MAX));
+    phoneShow(original.toDataURL("image/jpeg", 0.88));
+    start();
+  }
+  ["file", "file2", "file3"].forEach((id) => {
+    const inp = $(id);
+    inp.addEventListener("change", () => { const f = inp.files[0]; inp.value = ""; onFile(f); });
+  });
+  document.addEventListener("dragover", (e) => { if ([...(e.dataTransfer?.types || [])].includes("Files")) e.preventDefault(); });
+  document.addEventListener("drop", (e) => {
+    const f = [...(e.dataTransfer?.files || [])].find((x) => (x.type || "").startsWith("image/"));
+    if (f) { e.preventDefault(); if (!busy) onFile(f); }
+  });
+
+  /* ---------- AI ---------- */
+  function errText(e) {
+    if (!e) return "";
+    if (typeof e === "string") return e;
+    const parts = [e.message, e.error && (e.error.message || e.error), e.code, e.status];
+    const t = parts.filter((p) => typeof p === "string").join(" ");
+    if (t) return t;
+    try { return JSON.stringify(e); } catch { return String(e); }
+  }
+  const isAuthErr = (t) => /sign.?in|signin|auth|unauthori|not logged|login|token/i.test(t);
+  const isMoneyErr = (t) => /fund|credit|balance|insufficient|quota|limit|payment|usage|allowance/i.test(t);
+  const isModelErr = (t) => /model/i.test(t) && /not found|unknown|unsupported|invalid|not available|does not exist/i.test(t);
+  function friendly(e) {
+    const t = errText(e);
+    if (isMoneyErr(t)) return "Your free Puter AI allowance ran out for now. Try again later.";
+    if (/safety|blocked|policy|prohibit|refus|not allowed|moderat|cannot edit|can't edit/i.test(t)) return "The AI wouldn't edit this photo. Try a different one, like a clear selfie of just you.";
+    if (/timed out|timeout/i.test(t)) return "The AI took too long to answer. Try again.";
+    return "The AI couldn't finish this one. Try again, or use a different photo.";
+  }
+  function withTimeout(p, ms) {
+    return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timed out")), ms))]);
+  }
+  let modelIdx = 0;
+  async function aiEdit(prompt, inputB64) {
+    let last;
+    for (let m = modelIdx; m < MODELS.length; m++) {
+      try {
+        const out = await withTimeout(puter.ai.txt2img(prompt, { model: MODELS[m], input_image: inputB64, input_image_mime_type: "image/jpeg" }), 150000);
+        modelIdx = m;
+        return out;
+      } catch (e) {
+        last = e;
+        if (!isModelErr(errText(e))) throw e;
+      }
+    }
+    throw last;
+  }
+  async function toCanvas(out) {
+    let im = out;
+    if (typeof out === "string") { im = new Image(); im.src = out.startsWith("data:") || out.startsWith("http") || out.startsWith("blob:") ? out : "data:image/png;base64," + out; }
+    if (!(im instanceof HTMLImageElement)) throw new Error("The AI sent back something that isn't an image.");
+    try { await im.decode(); } catch {}
+    if (!im.naturalWidth) await new Promise((res, rej) => { im.onload = res; im.onerror = () => rej(new Error("The AI image didn't load.")); });
+    let c = fit(im, im.naturalWidth, im.naturalHeight, KEEP_MAX);
+    try { c.getContext("2d").getImageData(0, 0, 1, 1); }
+    catch {
+      const blob = await (await fetch(im.src)).blob();
+      const bm = await createImageBitmap(blob);
+      c = fit(bm, bm.width, bm.height, KEEP_MAX);
+    }
+    return c;
+  }
+
+  let busy = false, outputs = [];
+  async function start() {
+    if (!window.puter || !puter.ai) { fail("The free AI didn't load. If you're previewing this inside another app, open the site in a normal browser. Otherwise check your connection and refresh."); return; }
+    let signed = false;
+    try { signed = await Promise.resolve(puter.auth.isSignedIn()); } catch {}
+    if (!signed) { show("auth"); return; }
+    run();
+  }
+  $("signIn").addEventListener("click", async () => {
+    try { await puter.auth.signIn(); }
+    catch { toast("Sign-in didn't finish. Tap the button to try again."); return; }
+    run();
+  });
+  $("authBack").addEventListener("click", () => { phoneReset(); show("idle"); });
+  $("retry").addEventListener("click", () => { if (original) start(); else show("idle"); });
+  $("redo").addEventListener("click", () => { if (original && !recording) start(); });
+
+  function renderSteps() {
+    el.steps.innerHTML = "";
+    STEPS.forEach((s) => {
+      const li = document.createElement("li");
+      li.innerHTML = '<span class="ic" aria-hidden="true"></span><span class="lbl"></span><span class="st"></span>';
+      li.querySelector(".lbl").textContent = s.label;
+      li.querySelector(".st").textContent = "waiting";
+      el.steps.appendChild(li);
+    });
+  }
+  function markStep(i, status) {
+    const li = el.steps.children[i]; if (!li) return;
+    li.className = status;
+    li.querySelector(".st").textContent = { active: "working…", done: "done", failed: "skipped", "": "waiting" }[status];
+  }
+
+  async function run() {
+    if (busy || !original) return;
+    busy = true; outputs = [];
+    stopPlay();
+    el.phone.classList.remove("slides", "tappable"); el.count.hidden = true; el.dots.innerHTML = "";
+    show("work"); renderSteps();
+    phoneShow(original.toDataURL("image/jpeg", 0.88), { scanning: true, chip: `glow-up 1 of ${STEPS.length}` });
+    let input = originalB64, lastErr = null;
+    for (let i = 0; i < STEPS.length; i++) {
+      markStep(i, "active");
+      el.workChip.textContent = `glow-up ${i + 1} of ${STEPS.length}`;
+      try {
+        const out = await aiEdit(STEPS[i].prompt + KEEP, input);
+        const c = await toCanvas(out);
+        outputs.push(c);
+        input = b64(fit(c, c.width, c.height, AI_MAX));
+        markStep(i, "done");
+        phoneShow(c.toDataURL("image/jpeg", 0.88), { scanning: i < STEPS.length - 1, chip: i < STEPS.length - 1 ? `glow-up ${i + 2} of ${STEPS.length}` : "" });
+      } catch (e) {
+        lastErr = e;
+        markStep(i, "failed");
+        for (let j = i + 1; j < STEPS.length; j++) markStep(j, "failed");
+        break;
+      }
+    }
+    busy = false;
+    if (!outputs.length) {
+      if (isAuthErr(errText(lastErr))) { show("auth"); toast("Sign in to Puter so the AI can run."); return; }
+      fail(friendly(lastErr)); return;
+    }
+    if (lastErr) toast(`Made ${outputs.length} of ${STEPS.length} glow-ups. ${friendly(lastErr)}`);
+    await buildSlides();
+  }
+  function fail(msg) {
+    busy = false;
+    el.scan.hidden = true; el.workChip.hidden = true;
+    el.errMsg.textContent = msg;
+    show("error");
+  }
+
+  /* ---------- slides ---------- */
+  function wrapLines(ctx, text, maxW) {
+    const out = [];
+    for (const para of text.split("\n")) {
+      const words = para.split(/\s+/).filter(Boolean);
+      let line = "";
+      for (const w of words) {
+        const t = line ? line + " " + w : w;
+        if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t;
+      }
+      if (line) out.push(line);
+    }
+    return out;
+  }
+  function drawCaption(ctx, text) {
+    if (!text) return;
+    ctx.save();
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "1px";
+    const fs = 66;
+    ctx.font = `800 ${fs}px Figtree, system-ui, -apple-system, "Segoe UI", sans-serif`;
+    const lines = wrapLines(ctx, text, 880), lh = fs * 1.24;
+    let y = OUT_H * 0.2 - (lines.length * lh) / 2 + lh / 2;
+    ctx.lineJoin = "round"; ctx.miterLimit = 2; ctx.lineWidth = 11; ctx.strokeStyle = "#000000"; ctx.fillStyle = "#FFFFFF";
+    for (const ln of lines) { ctx.strokeText(ln, OUT_W / 2, y + 2); ctx.fillText(ln, OUT_W / 2, y + 2); y += lh; }
+    ctx.restore();
+  }
+  function drawSlide(ctx, src, caption, mark) {
+    const W = src.width, H = src.height;
+    ctx.save();
+    ctx.fillStyle = "#000000"; ctx.fillRect(0, 0, OUT_W, OUT_H);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    const cs = Math.max(OUT_W / W, OUT_H / H), vw = OUT_W / cs, vh = OUT_H / cs;
+    const t1 = mk(68, 120); t1.getContext("2d").drawImage(src, (W - vw) / 2, (H - vh) / 2, vw, vh, 0, 0, 68, 120);
+    const t2 = mk(17, 30); t2.getContext("2d").drawImage(t1, 0, 0, 17, 30);
+    ctx.drawImage(t2, 0, 0, OUT_W, OUT_H);
+    ctx.fillStyle = "rgba(0,0,0,0.42)"; ctx.fillRect(0, 0, OUT_W, OUT_H);
+    const s = Math.min(OUT_W / W, OUT_H / H), dw = W * s, dh = H * s;
+    ctx.drawImage(src, (OUT_W - dw) / 2, (OUT_H - dh) / 2, dw, dh);
+    ctx.restore();
+    drawCaption(ctx, caption);
+    if (mark) {
+      ctx.save();
+      ctx.font = '600 30px Figtree, system-ui, sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = "rgba(255,255,255,0.72)"; ctx.shadowColor = "rgba(0,0,0,0.6)"; ctx.shadowBlur = 8;
+      ctx.fillText(mark, OUT_W / 2, OUT_H - 70);
+      ctx.restore();
+    }
+  }
+  const siteMark = (() => {
+    const h = location.hostname || "";
+    return h.includes(".") && !/^(localhost|127\.|0\.0\.0\.0)/.test(h) ? "made on " + h.replace(/^www\./, "") : "";
+  })();
+
+  let slides = [], slideFiles = [], cur = 0;
+  async function buildSlides() {
+    await fontsGate;
+    const n = outputs.length;
+    const seq = [];
+    for (let k = 0; k <= n; k++) {
+      const src = k < n ? outputs[n - 1 - k] : original;
+      const caption = k === 0 ? pick(SETUP) : pick(STEPS[n - k].confess);
+      seq.push({ src, caption });
+    }
+    slides = []; slideFiles = [];
+    for (let i = 0; i < seq.length; i++) {
+      const c = mk(OUT_W, OUT_H);
+      drawSlide(c.getContext("2d"), seq[i].src, seq[i].caption, i === seq.length - 1 ? siteMark : "");
+      slides.push({ canvas: c, url: c.toDataURL("image/jpeg", 0.9), caption: seq[i].caption });
+      const blob = await toBlob(c);
+      slideFiles.push(new File([blob], `im-so-sorry-${i + 1}.jpg`, { type: "image/jpeg" }));
+    }
+    videoFile = null; el.saveVideo.textContent = "Save video";
+    el.scan.hidden = true; el.workChip.hidden = true;
+    el.phone.classList.add("slides", "tappable");
+    el.count.hidden = false;
+    el.dots.innerHTML = slides.map(() => "<span></span>").join("");
+    show("done");
+    go(0); startPlay();
+  }
+
+  /* ---------- player ---------- */
+  let playTimer = null;
+  function go(i) {
+    if (!slides.length) return;
+    cur = (i + slides.length) % slides.length;
+    const s = slides[cur];
+    el.img.hidden = false; el.img.src = s.url;
+    el.img.alt = `Slide ${cur + 1} of ${slides.length}. Caption: ${s.caption.replace(/\n/g, " ")}`;
+    el.count.textContent = `${cur + 1}/${slides.length}`;
+    [...el.dots.children].forEach((d, j) => d.classList.toggle("on", j === cur));
+  }
+  function startPlay() { stopPlay(); playTimer = setInterval(() => go(cur + 1), 2200); el.play.textContent = "Pause"; }
+  function stopPlay() { clearInterval(playTimer); playTimer = null; el.play.textContent = "Play"; }
+  el.play.addEventListener("click", () => (playTimer ? stopPlay() : startPlay()));
+  el.prev.addEventListener("click", () => { stopPlay(); go(cur - 1); });
+  el.next.addEventListener("click", () => { stopPlay(); go(cur + 1); });
+  el.phone.addEventListener("click", (e) => {
+    if (!slides.length || busy) return;
+    const r = el.phone.getBoundingClientRect();
+    stopPlay(); go(e.clientX - r.left < r.width / 3 ? cur - 1 : cur + 1);
+  });
+  el.phone.addEventListener("keydown", (e) => {
+    if (!slides.length) return;
+    if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); go(cur + 1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); go(cur - 1); }
+  });
+
+  /* ---------- saving ---------- */
+  function download(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+  async function shareOrDownload(files) {
+    if (coarse && navigator.canShare && navigator.canShare({ files })) {
+      try { await navigator.share({ files }); return "shared"; }
+      catch (e) { if (e && e.name === "AbortError") return "canceled"; }
+    }
+    for (const f of files) { download(f, f.name); await sleep(350); }
+    return "downloaded";
+  }
+  el.saveSlides.addEventListener("click", async () => {
+    if (!slideFiles.length) return;
+    const r = await shareOrDownload(slideFiles);
+    if (r === "downloaded") toast(`Saved ${slideFiles.length} slides to your downloads.`);
+  });
+
+  let recording = false, videoFile = null;
+  el.saveVideo.addEventListener("click", async () => {
+    if (recording || !slides.length) return;
+    if (videoFile) { const r = await shareOrDownload([videoFile]); if (r === "downloaded") toast("Saved the video to your downloads."); return; }
+    const types = ["video/mp4;codecs=avc1.42E01F", "video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+    const mime = window.MediaRecorder && types.find((t) => { try { return MediaRecorder.isTypeSupported(t); } catch { return false; } });
+    const c = mk(OUT_W, OUT_H), x = c.getContext("2d");
+    if (!mime || !c.captureStream) { toast("This browser can't make videos. Save the slides instead."); return; }
+    x.fillStyle = "#000000"; x.fillRect(0, 0, OUT_W, OUT_H);
+    let rec, stream;
+    try { stream = c.captureStream(30); rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8000000 }); }
+    catch { toast("This browser can't make videos. Save the slides instead."); return; }
+    recording = true; stopPlay(); el.saveVideo.disabled = true;
+    const chunks = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    const done = new Promise((r) => { rec.onstop = r; });
+    try {
+      rec.start(250);
+      for (let i = 0; i < slides.length; i++) {
+        el.saveVideo.textContent = `Recording ${i + 1}/${slides.length}…`;
+        go(i);
+        const hold = i === slides.length - 1 ? 3000 : 2200, t0 = performance.now();
+        while (performance.now() - t0 < hold) { x.drawImage(slides[i].canvas, 0, 0); await sleep(60); }
+      }
+      rec.stop(); await done;
+    } finally {
+      stream.getTracks().forEach((t) => t.stop());
+      recording = false; el.saveVideo.disabled = false; el.saveVideo.textContent = "Save video";
+    }
+    const blob = new Blob(chunks, { type: mime.split(";")[0] });
+    if (!blob.size) { toast("The video came out empty. Try again and keep this tab open while it records."); return; }
+    videoFile = new File([blob], `im-so-sorry.${mime.includes("mp4") ? "mp4" : "webm"}`, { type: blob.type });
+    if (coarse && navigator.canShare && navigator.canShare({ files: [videoFile] })) {
+      el.saveVideo.textContent = "Tap to save video";
+      toast("Video's ready. Tap Save video to keep it.");
+    } else {
+      download(videoFile, videoFile.name);
+      toast("Saved the video to your downloads.");
+    }
+  });
+
+  show("idle");
+})();
+</script>
+</body>
+</html>
