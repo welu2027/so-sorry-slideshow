@@ -180,7 +180,7 @@ img{max-width:100%}
           <button class="btn ghost" id="saveVideo">Save video</button>
         </div>
         <a class="btn ghost" href="https://www.tiktok.com/music/original-sound-7694037025485310750" target="_blank" rel="noopener">Open the trend sound on TikTok</a>
-        <p class="hint">Post your saved slides as a TikTok photo slideshow and pick this sound, so your post shows up with the rest of the trend. The video has no sound and works for Reels and Stories.</p>
+        <p class="hint">The video comes with its own beat. To use the trend sound instead, open it on TikTok, tap Use this sound, and pick your saved slides.</p>
         <div class="row">
           <button class="btn text" id="redo">Redo the glow-up</button>
           <label class="btn text file-btn"><input type="file" id="file2" accept="image/*">New photo</label>
@@ -569,33 +569,125 @@ img{max-width:100%}
     if (r === "downloaded") toast(`Saved ${slideFiles.length} slides to your downloads.`);
   });
 
+  /* Original beat for the video: one bar per slide, then a record scratch and a sad "womp womp womp" on the real photo. */
+  const midi = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  function scheduleBeat(ctx, dest, t0, durs) {
+    const out = ctx.createGain(); out.gain.value = 0.7;
+    const comp = ctx.createDynamicsCompressor();
+    out.connect(comp); comp.connect(dest);
+    const nb = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate), nd = nb.getChannelData(0);
+    for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    const env = (g, t, peak, dur) => { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); };
+    const kick = (t) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.13);
+      env(g, t, 1, 0.38); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.42);
+    };
+    const noise = (t, dur, type, freq, vol) => {
+      const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      s.buffer = nb; f.type = type; f.frequency.value = freq;
+      env(g, t, vol, dur); s.connect(f); f.connect(g); g.connect(out); s.start(t); s.stop(t + dur + 0.02);
+    };
+    const clap = (t) => { noise(t, 0.16, "bandpass", 1400, 0.6); noise(t + 0.014, 0.2, "bandpass", 1100, 0.45); };
+    const hat = (t, v) => noise(t, 0.045, "highpass", 7500, v);
+    const tone = (t, m, dur, type, vol, cut) => {
+      const o = ctx.createOscillator(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      o.type = type; o.frequency.setValueAtTime(midi(m), t); f.type = "lowpass"; f.frequency.value = cut;
+      env(g, t, vol, dur); o.connect(f); f.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05);
+    };
+    const chords = [[72, 76, 79], [69, 72, 76], [65, 69, 72], [67, 71, 74]];
+    const arp = [0, 1, 2, 1, 0, 2, 1, 2];
+    let start = t0;
+    durs.forEach((d, i) => {
+      if (i < durs.length - 1) {
+        const beat = d / 4, ch = chords[i % chords.length];
+        for (let b = 0; b < 4; b++) {
+          const tb = start + b * beat;
+          if (b % 2 === 0) kick(tb); else clap(tb);
+          if (b === 2) kick(tb + beat * 0.75);
+          hat(tb, 0.12); hat(tb + beat / 2, 0.07);
+          tone(tb, ch[0] - 24, beat * 0.9, "sawtooth", 0.32, 520);
+          tone(tb + beat / 2, ch[0] - 12, beat * 0.35, "sawtooth", 0.14, 700);
+        }
+        for (let s = 0; s < 8; s++) tone(start + (s * beat) / 2, ch[arp[s]], beat * 0.45, "triangle", 0.22, 4000);
+      } else {
+        const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+        s.buffer = nb; f.type = "bandpass"; f.Q.value = 3;
+        f.frequency.setValueAtTime(3200, start); f.frequency.exponentialRampToValueAtTime(350, start + 0.28);
+        env(g, start, 0.9, 0.32); s.connect(f); f.connect(g); g.connect(out); s.start(start); s.stop(start + 0.35);
+        [[62, 0.45, 0.42], [61, 0.95, 0.42], [60, 1.45, 1.3]].forEach(([m, at, len], k) => {
+          const t = start + at, o = ctx.createOscillator(), fl = ctx.createBiquadFilter(), gg = ctx.createGain();
+          o.type = "sawtooth"; o.frequency.setValueAtTime(midi(m - 12), t);
+          fl.type = "lowpass"; fl.Q.value = 6;
+          fl.frequency.setValueAtTime(300, t); fl.frequency.exponentialRampToValueAtTime(1500, t + 0.12); fl.frequency.exponentialRampToValueAtTime(350, t + len);
+          if (k === 2) {
+            const lfo = ctx.createOscillator(), lg = ctx.createGain();
+            lfo.frequency.value = 5.5; lg.gain.value = 4; lfo.connect(lg); lg.connect(o.frequency);
+            lfo.start(t + 0.3); lfo.stop(t + len);
+          }
+          gg.gain.setValueAtTime(0.0001, t); gg.gain.exponentialRampToValueAtTime(0.5, t + 0.04);
+          gg.gain.setValueAtTime(0.5, t + len * 0.7); gg.gain.exponentialRampToValueAtTime(0.0001, t + len);
+          o.connect(fl); fl.connect(gg); gg.connect(out); o.start(t); o.stop(t + len + 0.05);
+        });
+      }
+      start += d;
+    });
+  }
+
   let recording = false, videoFile = null;
   el.saveVideo.addEventListener("click", async () => {
     if (recording || !slides.length) return;
     if (videoFile) { const r = await shareOrDownload([videoFile]); if (r === "downloaded") toast("Saved the video to your downloads."); return; }
-    const types = ["video/mp4;codecs=avc1.42E01F", "video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
-    const mime = window.MediaRecorder && types.find((t) => { try { return MediaRecorder.isTypeSupported(t); } catch { return false; } });
+    // The audio context has to be created right here in the click, before any await, or browsers keep it muted.
+    let actx = null, dest = null;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) { actx = new AC(); dest = actx.createMediaStreamDestination(); }
+    } catch { actx = null; dest = null; }
+    const closeAudio = () => { try { const p = actx && actx.close(); if (p && p.catch) p.catch(() => {}); } catch {} };
+    const ok = (t) => { try { return MediaRecorder.isTypeSupported(t); } catch { return false; } };
+    const withAudio = ["video/mp4;codecs=avc1.42E01F,mp4a.40.2", "video/mp4;codecs=avc1,mp4a.40.2", "video/mp4;codecs=avc1.42E01F,opus", "video/mp4;codecs=avc1,opus", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+    const videoOnly = ["video/mp4;codecs=avc1.42E01F", "video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+    let mime = window.MediaRecorder && dest ? withAudio.find(ok) : null;
+    if (!mime) { closeAudio(); actx = null; dest = null; mime = window.MediaRecorder && videoOnly.find(ok); }
     const c = mk(OUT_W, OUT_H), x = c.getContext("2d");
-    if (!mime || !c.captureStream) { toast("This browser can't make videos. Save the slides instead."); return; }
+    if (!mime || !c.captureStream) { closeAudio(); toast("This browser can't make videos. Save the slides instead."); return; }
     x.fillStyle = "#000000"; x.fillRect(0, 0, OUT_W, OUT_H);
-    let rec, stream;
-    try { stream = c.captureStream(30); rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8000000 }); }
-    catch { toast("This browser can't make videos. Save the slides instead."); return; }
+    let rec, stream, vstream;
+    try {
+      vstream = c.captureStream(30);
+      stream = dest ? new MediaStream([...vstream.getVideoTracks(), ...dest.stream.getAudioTracks()]) : vstream;
+      rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8000000, audioBitsPerSecond: 160000 });
+    } catch { closeAudio(); toast("This browser can't make videos. Save the slides instead."); return; }
     recording = true; stopPlay(); el.saveVideo.disabled = true;
     const chunks = [];
     rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
     const done = new Promise((r) => { rec.onstop = r; });
+    const durs = slides.map((_, i) => (i === slides.length - 1 ? 3.2 : 2.2));
+    const starts = []; let total = 0;
+    durs.forEach((d) => { starts.push(total); total += d; });
     try {
+      if (actx && actx.state !== "running") { try { await actx.resume(); } catch {} }
+      const live = !!(actx && actx.state === "running");
+      const clock = live ? () => actx.currentTime : () => performance.now() / 1000;
       rec.start(250);
-      for (let i = 0; i < slides.length; i++) {
-        el.saveVideo.textContent = `Recording ${i + 1}/${slides.length}…`;
-        go(i);
-        const hold = i === slides.length - 1 ? 3000 : 2200, t0 = performance.now();
-        while (performance.now() - t0 < hold) { x.drawImage(slides[i].canvas, 0, 0); await sleep(60); }
+      const t0 = clock() + 0.25;
+      if (live) scheduleBeat(actx, dest, t0, durs);
+      let shown = -1;
+      for (;;) {
+        const t = clock() - t0;
+        if (t >= total + 0.1) break;
+        let i = 0;
+        for (let k = 1; k < starts.length; k++) if (t >= starts[k]) i = k;
+        if (i !== shown) { shown = i; go(i); el.saveVideo.textContent = `Recording ${i + 1}/${slides.length}…`; }
+        x.drawImage(slides[i].canvas, 0, 0);
+        await sleep(33);
       }
       rec.stop(); await done;
     } finally {
       stream.getTracks().forEach((t) => t.stop());
+      if (vstream && vstream !== stream) vstream.getTracks().forEach((t) => t.stop());
+      closeAudio();
       recording = false; el.saveVideo.disabled = false; el.saveVideo.textContent = "Save video";
     }
     const blob = new Blob(chunks, { type: mime.split(";")[0] });
