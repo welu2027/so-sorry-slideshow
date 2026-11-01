@@ -209,17 +209,18 @@ img{max-width:100%}
   const MODELS = ["gemini-3.1-flash-image", "google/gemini-nano-banana-2.1", "gemini-2.5-flash-image"];
   const KEEP = " Keep everything else exactly the same: the same person and identity, the same age, the same natural skin tone and ethnicity, the same body, the same pose and expression, the same clothes, the same background, and the same framing and camera angle. Photorealistic, like a real phone photo. No text, no borders, no watermark.";
   const STEPS = [
-    { label: "Skin and lighting",
-      prompt: "Retouch this photo like a professional beauty edit: clear, smooth, glowing skin with no blemishes, redness or shine, and soft, bright, flattering lighting on the face.",
-      confess: ["I'm SO sorry 😭", "I'm SO sorry 😭", "I'm SO sorry 😭"] },
     { label: "Hair",
       prompt: "Give the person in this photo noticeably better hair: fuller, glossier and perfectly styled in a way that suits them, keeping their natural hair color.",
       confess: ["my hair doesn't look like that 😭", "ok the hair was edited 😭", "my hair has never looked like that 😭"] },
+    { label: "Skin and lighting",
+      prompt: "Retouch this photo like a professional beauty edit: clear, smooth, glowing skin with no blemishes, redness or shine, and soft, bright, flattering lighting on the face.",
+      confess: ["the skin was a filter 😭", "my skin does NOT look like that 😭", "the glow was fake 😭"] },
     { label: "Model mode",
       prompt: "Make the person in this photo look like the most attractive version of themselves, like a model: a more defined jawline, more symmetrical features and brighter eyes. They must still be clearly recognizable as the same person.",
       confess: ["ok that's not my jawline 😭", "i don't look like a model irl 😭", "the jawline was edited 😭"] }
   ];
   const SETUP = ["felt cute today", "new pfp", "me after my glow up", "finally posting this"];
+  const FINAL = "I'm SO sorry 😭";
 
   const $ = (s) => document.getElementById(s);
   const el = {
@@ -501,7 +502,7 @@ img{max-width:100%}
     const seq = [];
     for (let k = 0; k <= n; k++) {
       const src = k < n ? outputs[n - 1 - k] : original;
-      const caption = k === 0 ? pick(SETUP) : pick(STEPS[n - k].confess);
+      const caption = k === 0 ? pick(SETUP) : k === n ? FINAL : pick(STEPS[n - k].confess);
       seq.push({ src, caption });
     }
     slides = []; slideFiles = [];
